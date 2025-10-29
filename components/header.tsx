@@ -95,7 +95,7 @@ export const HeroHeader = () => {
                                                     variant: "outline",
                                                     size: "sm",
                                                 })}
-                                                href="/dashboard"
+                                                href="/workspace"
                                             >
                                                 <span>Dashboard</span>
                                             </Link>
