@@ -17,10 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { workspaceSchema } from "@/schema/workspace";
+import { workspaceSchema, WorkspaceSchemaType } from "@/schema/workspace";
+import { useMutation } from "@tanstack/react-query";
+import { orpc } from "@/lib/orpc";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export function CreateWorkSpace() {
     const [open, setOpen] = useState(false);
+    const queryClient = useQueryClient();
 
     const form = useForm<z.infer<typeof workspaceSchema>>({
         resolver: zodResolver(workspaceSchema),
@@ -29,7 +34,28 @@ export function CreateWorkSpace() {
         },
     });
 
-    function onSubmit() {}
+    const createWorkspaceMutation = useMutation(
+        orpc.workspace.create.mutationOptions({
+            onSuccess: (newWorkspace) => {
+                toast.success(`Workspace ${newWorkspace.workspaceName} created successfully`);
+
+                queryClient.invalidateQueries({
+                    queryKey: orpc.workspace.list.queryKey(),
+                });
+
+                form.reset();
+                setOpen(false);
+            },
+
+            onError: () => {
+                toast.error("Failed to create workspace");
+            },
+        }),
+    );
+
+    function onSubmit(values: WorkspaceSchemaType) {
+        createWorkspaceMutation.mutate(values);
+    }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -71,7 +97,9 @@ export function CreateWorkSpace() {
                             )}
                         />
 
-                        <Button type="submit">Create WorkSpace</Button>
+                        <Button disabled={createWorkspaceMutation.isPending} type="submit">
+                            {createWorkspaceMutation.isPending ? "Creating..." : "Create"}
+                        </Button>
                     </form>
                 </Form>
             </DialogContent>
